@@ -1,0 +1,164 @@
+{% extends 'conteo_api/base.html' %}
+{% load static %}
+{% block title %}Crear Área ROI{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h3 class="mb-4">🖍️ Crear Área ROI</h3>
+
+  <!-- Selección de cámara -->
+  <div class="mb-3">
+    <label for="camaraSelect" class="form-label">Seleccionar Cámara:</label>
+    <select id="camaraSelect" class="form-select">
+      <option disabled selected>Seleccione una cámara</option>
+      {% for cam in camaras %}
+      <option value="{{ cam.id }}">{{ cam.nombre }} - {{ cam.direccion_ip }}:{{ cam.puerto }}</option>
+
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Canvas con imagen y dibujo -->
+  <div class="mb-3">
+    <div style="position: relative;">
+      <img id="videoStream" width="1020" height="500" class="border" />
+      <canvas id="canvasROI" width="1020" height="500"
+              style="position: absolute; top: 0; left: 0; cursor: crosshair;"></canvas>
+    </div>
+  </div>
+
+  <!-- Botones de acción -->
+  <div class="mb-4">
+    <button class="btn btn-primary" onclick="setROI(1)">Editar ROI Entrada</button>
+    <button class="btn btn-danger" onclick="setROI(2)">Editar ROI Salida</button>
+    <button class="btn btn-warning" onclick="resetROI()">Reset</button>
+    <button class="btn btn-secondary" onclick="deshacerPunto()">Deshacer Punto</button>
+    <button class="btn btn-success" onclick="guardarROI()">Guardar</button>
+  </div>
+
+  <!-- Tabla de coordenadas -->
+  <div class="mt-4" id="tablaCoordenadas"></div>
+</div>
+
+<script>
+let currentROI = 1;
+let rois = {1: [], 2: []};
+let canvas = document.getElementById('canvasROI');
+let ctx = canvas.getContext('2d');
+let imagen = new Image();
+
+// Dibujar punto en canvas
+canvas.addEventListener('click', function(event) {
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  rois[currentROI].push([x, y]);
+  drawCanvas();
+});
+
+function setROI(id) {
+  currentROI = id;
+  drawCanvas();
+}
+
+function resetROI() {
+  rois[currentROI] = [];
+  drawCanvas();
+}
+
+function deshacerPunto() {
+  if (rois[currentROI].length > 0) {
+    rois[currentROI].pop();
+    drawCanvas();
+  }
+}
+
+// Redibuja los polígonos
+function drawCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(imagen, 0, 0, canvas.width, canvas.height);
+
+  for (let i = 1; i <= 2; i++) {
+    if (rois[i].length > 0) {
+      ctx.beginPath();
+      ctx.moveTo(rois[i][0][0], rois[i][0][1]);
+      for (let j = 1; j < rois[i].length; j++) {
+        ctx.lineTo(rois[i][j][0], rois[i][j][1]);
+      }
+      if (rois[i].length > 2) ctx.closePath();
+      ctx.strokeStyle = i === 1 ? 'blue' : 'red';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      for (let pt of rois[i]) {
+        ctx.beginPath();
+        ctx.arc(pt[0], pt[1], 4, 0, 2 * Math.PI);
+        ctx.fillStyle = i === 1 ? 'blue' : 'red';
+        ctx.fill();
+      }
+    }
+  }
+}
+
+// Al cambiar cámara, carga imagen + ROIs + tabla
+document.getElementById("camaraSelect").addEventListener("change", function () {
+  const camaraId = this.value;
+  const streamUrl = `/conteo/roi/stream/${camaraId}/`;
+  const img = document.getElementById("videoStream");
+
+  imagen.onload = () => {
+    fetch(`/conteo/roi/poligonos/${camaraId}/`)
+      .then(resp => resp.json())
+      .then(data => {
+        rois = {1: [], 2: []};
+        let tablaHTML = '';
+
+        if (data.length > 0) {
+          tablaHTML += '<h5>Coordenadas ROI</h5>';
+          tablaHTML += '<table class="table table-bordered">';
+          tablaHTML += '<thead><tr><th>Área</th><th>Coordenadas (x, y)</th></tr></thead><tbody>';
+
+          data.forEach(p => {
+            const idx = p.area_interes === "ROI1" ? 1 : 2;
+            rois[idx] = p.coordenadas;
+
+            tablaHTML += `<tr><td>${p.area_interes}</td><td>`;
+            tablaHTML += p.coordenadas.map(coord => `(${coord[0]}, ${coord[1]})`).join(', ');
+            tablaHTML += '</td></tr>';
+          });
+
+          tablaHTML += '</tbody></table>';
+        } else {
+          tablaHTML = '<div class="text-muted">No hay coordenadas guardadas para esta cámara.</div>';
+        }
+
+        document.getElementById('tablaCoordenadas').innerHTML = tablaHTML;
+        drawCanvas();
+      })
+      .catch(err => {
+        console.error("Error al cargar polígonos:", err);
+        document.getElementById('tablaCoordenadas').innerHTML = '<div class="text-danger">Error al cargar coordenadas.</div>';
+      });
+  };
+
+  imagen.src = streamUrl + "?t=" + new Date().getTime();
+  img.src = imagen.src;
+});
+
+// Guardar ROI en backend
+function guardarROI() {
+  const camaraId = document.getElementById('camaraSelect').value;
+  fetch(`/conteo/roi/guardar/${camaraId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify(rois)
+  })
+  .then(resp => resp.json())
+  .then(data => alert(data.mensaje))
+  .catch(err => alert("Error al guardar: " + err));
+}
+</script>
+{% endblock %}

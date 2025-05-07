@@ -1,0 +1,131 @@
+{% extends 'conteo_api/base.html' %}
+{% load static %}
+{% load custom_filters %}
+{% url 'stream_camara' cam.id %}
+
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="fas fa-th-large"></i> Visualización de Cámaras</h3>
+  </div>
+
+  <div class="row row-cols-1 row-cols-md-2 g-3">
+    {% for cam in camaras %}
+    <div class="col camara-box">
+      <div class="card h-100 shadow-sm bg-dark text-white" ondblclick="toggleFull(this)">
+        <div class="card-header d-flex justify-content-between align-items-center bg-secondary">
+          <span>
+            <i class="fas fa-video"></i> {{ cam.nombre|default:"Cámara sin nombre" }}
+          </span>
+          <div>
+            <button class="btn btn-sm btn-outline-light" onclick="iniciarConteo('{{ cam.id }}')">
+              <i class="fas fa-play"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-light" onclick="detenerConteo('{{ cam.id }}')">
+              <i class="fas fa-stop"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-2 d-flex justify-content-center align-items-center" style="height:300px;">
+          <img src="{% url 'stream_camara' cam.id %}"
+          {% if cam.id %}
+              <img src="{% url 'stream_camara' cam.id %}"
+                  id="camara_{{ cam.id }}"
+                  class="img-fluid rounded border"
+                  style="max-height:100%; max-width:100%; object-fit:contain;"
+                  alt="Cámara {{ cam.id }}"
+                  onload="actualizarTimestamp('{{ cam.id }}')"
+                  onerror="mostrarError('{{ cam.id }}')">
+            {% else %}
+              <div class="text-center text-light">
+                <i class="fas fa-video-slash fa-3x mb-2"></i>
+                <p class="mb-0">Cámara sin ID válido</p>
+              </div>
+            {% endif %} 
+        </div>
+        <div class="conteo-text text-center text-muted small bg-light text-dark py-1" id="conteo_{{ cam.id }}">
+          Ingresan: 0 | Salen: 0
+        </div>
+        <div class="text-center text-muted small py-1" id="timestamp_{{ cam.id }}">
+          Última imagen: --
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+  .fullscreen {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 70px);
+    z-index: 1050;
+    background-color: black;
+  }
+  .fullscreen .card-body {
+    height: 100%;
+  }
+  .fullscreen img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+</style>
+
+<script>
+  function toggleFull(card) {
+    const isFull = card.classList.contains('fullscreen');
+    document.querySelectorAll('.camara-box').forEach(box => {
+      if (isFull) {
+        box.style.display = 'block';
+        box.firstElementChild.classList.remove('fullscreen');
+      } else {
+        if (box.firstElementChild === card) {
+          box.style.display = 'block';
+          card.classList.add('fullscreen');
+        } else {
+          box.style.display = 'none';
+        }
+      }
+    });
+  }
+
+  function actualizarTimestamp(camaraId) {
+    const elem = document.getElementById("timestamp_" + camaraId);
+    if (elem) {
+      const ahora = new Date().toLocaleTimeString();
+      elem.textContent = "Última imagen: " + ahora;
+    }
+  }
+
+  function mostrarError(camaraId) {
+    const img = document.getElementById("camara_" + camaraId);
+    if (img && img.parentElement) {
+      img.parentElement.innerHTML = `
+        <div class="text-center text-light">
+          <i class="fas fa-video-slash fa-3x mb-2"></i>
+          <p class="mb-0">Sin señal</p>
+        </div>`;
+    }
+  }
+
+  // Actualizar conteos cada 5s
+  setInterval(() => {
+    {% for cam in camaras %}
+      fetch(`/api/conteo-actual/{{ cam.id }}/`)
+        .then(resp => resp.json())
+        .then(data => {
+          const box = document.getElementById("conteo_{{ cam.id }}");
+          if (box) {
+            box.innerText = `Ingresan: ${data.ingreso} | Salen: ${data.salida}`;
+          }
+        })
+        .catch(err => console.error('Error al obtener conteo:', err));
+    {% endfor %}
+  }, 5000);
+</script>
+{% endblock %}

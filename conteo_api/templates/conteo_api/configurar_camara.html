@@ -1,0 +1,147 @@
+{% extends 'conteo_api/base.html' %}
+
+{% block title %}Configurar Cámara{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h3 class="mb-4"><i class="fas fa-video"></i> Configurar Cámara</h3>
+
+  <form method="post" class="card shadow p-4 mb-4">
+    {% csrf_token %}
+    <input type="hidden" name="id" value="{{ editar.id|default:'' }}">
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Nombre</label>
+        <input type="text" class="form-control" name="nombre" value="{{ editar.nombre|default:'' }}" required>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Marca</label>
+        <select class="form-select" name="marca" id="marca" required onchange="actualizarEjemploRTSP()">
+          {% for m in marcas %}
+            <option value="{{ m }}" {% if editar.marca == m %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Protocolo</label>
+        <select class="form-select" name="protocolo">
+          <option value="rtsp" {% if editar.protocolo == 'rtsp' %}selected{% endif %}>rtsp</option>
+          <option value="rtmps" {% if editar.protocolo == 'rtmps' %}selected{% endif %}>rtmps</option>
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Usuario</label>
+        <input type="text" class="form-control" name="usuario" value="{{ editar.usuario|default:'' }}" required>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Contraseña</label>
+        <input type="password" class="form-control" name="password" value="{{ editar.password|default:'' }}" required>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Dirección IP</label>
+        <input type="text" class="form-control" name="direccion_ip" value="{{ editar.direccion_ip|default:'' }}" required>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Puerto</label>
+        <input type="number" class="form-control" name="puerto" value="{{ editar.puerto|default:554 }}" required>
+      </div>
+
+      <div class="col-md-12">
+        <label class="form-label">Ruta RTSP (Streaming Path)</label>
+        <input type="text" class="form-control" name="streaming_path" value="{{ editar.streaming_path|default:'' }}" required>
+        <small class="text-muted" id="ejemplo-rtsp">
+          Consulta el manual de tu cámara o grabador para ingresar la ruta correcta.
+        </small>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Estado</label>
+        <select class="form-select" name="estado_id" required>
+          {% for estado in estados %}
+            <option value="{{ estado.id }}" {% if editar.estado.id == estado.id %}selected{% endif %}>{{ estado.estado }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-4 text-end">
+      <button type="submit" class="btn btn-primary">{% if editar %}Actualizar{% else %}Registrar{% endif %}</button>
+      {% if editar %}
+        <a href="{% url 'configurar_camara' %}" class="btn btn-secondary">Cancelar</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <h5>Cámaras registradas</h5>
+  <table class="table table-bordered table-striped mt-3">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>IP</th>
+        <th>Puerto</th>
+        <th>Marca</th>
+        <th>Streaming Path</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for camara in camaras %}
+      <tr>
+        <td>{{ camara.id }}</td>
+        <td>{{ camara.direccion_ip }}</td>
+        <td>{{ camara.puerto }}</td>
+        <td>{{ camara.marca }}</td>
+        <td><code>{{ camara.streaming_path }}</code></td>
+        <td>{{ camara.estado.estado }}</td>
+        <td>
+          <a href="{% url 'editar_camara' camara.id %}" class="btn btn-sm btn-warning">Editar</a>
+          <a href="{% url 'eliminar_camara' camara.id %}" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que deseas eliminar esta cámara?')">Eliminar</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No hay cámaras registradas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  function actualizarEjemploRTSP() {
+    const marca = document.getElementById('marca').value;
+    const texto = document.getElementById('ejemplo-rtsp');
+
+    let ejemplo = '';
+    switch (marca) {
+      case 'Hikvision':
+        ejemplo = '<code>/Streaming/Channels/101</code>';
+        break;
+      case 'Dahua':
+        ejemplo = '<code>/cam/realmonitor?channel=1&subtype=0</code>';
+        break;
+      case 'Reolink':
+        ejemplo = '<code>/h264Preview_01_main</code>';
+        break;
+      case 'TP-Link':
+        ejemplo = '<code>/stream1</code> o <code>/h264_hd.sdp</code>';
+        break;
+      case 'Axis':
+        ejemplo = '<code>/axis-media/media.amp</code>';
+        break;
+      default:
+        ejemplo = 'Consulta el manual de tu cámara o grabador para ingresar la ruta correcta.';
+    }
+
+    texto.innerHTML = 'Ejemplo para ' + marca + ': ' + ejemplo;
+  }
+
+  document.addEventListener('DOMContentLoaded', actualizarEjemploRTSP);
+</script>
+{% endblock %}

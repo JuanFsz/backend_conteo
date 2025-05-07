@@ -1,0 +1,39 @@
+from ultralytics import YOLO
+import cv2
+
+class ConteoYOLO(threading.Thread):
+    def __init__(self, camara_id, rtsp_url):
+        super().__init__()
+        self.camara_id = camara_id
+        self.rtsp_url = rtsp_url
+        self._activo = True
+
+    def run(self):
+        print(f"[{self.camara_id}] Iniciando conteo con YOLO")
+        model = YOLO("yolov8n.pt")  # Cambia por tu modelo personalizado si aplica
+
+        cap = cv2.VideoCapture(self.rtsp_url)
+        if not cap.isOpened():
+            print(f"[{self.camara_id}] No se pudo abrir la cámara.")
+            return
+
+        while self._activo:
+            ret, frame = cap.read()
+            if not ret:
+                print(f"[{self.camara_id}] Error al leer frame.")
+                break
+
+            results = model.predict(source=frame, imgsz=640, conf=0.4, classes=[0], verbose=False)
+
+            # Conteo de personas (clase 0)
+            personas = sum([len(r.boxes) for r in results])
+            print(f"[{self.camara_id}] Personas detectadas: {personas}")
+
+            # Puedes almacenar el conteo, enviar a BD, etc.
+            time.sleep(1)  # control de flujo
+
+        cap.release()
+        print(f"[{self.camara_id}] Conteo detenido.")
+
+    def detener(self):
+        self._activo = False

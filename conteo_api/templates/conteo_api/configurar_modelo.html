@@ -1,0 +1,128 @@
+{% extends 'conteo_api/base.html' %}
+{% block title %}Configurar Modelo{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h3 class="mb-4"><i class="fas fa-microchip"></i> Configurar Modelo</h3>
+
+  <form method="post" class="card shadow p-4 mb-4">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Nombre del modelo</label>
+        <input type="text" class="form-control" name="nombre_modelo" value="{{ editar.nombre_modelo|default:'' }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Modelo YOLO</label>
+        <select class="form-select" name="modelo" required>
+          {% for value, label in modelos_yolo %}
+          <option value="{{ value }}" {% if editar.modelo == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Image Size</label>
+        <input type="number" class="form-control" name="image_size" value="{{ editar.image_size|default:640 }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Stride</label>
+        <input type="number" class="form-control" name="stride" value="{{ editar.stride|default:1 }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Conf. Threshold</label>
+        <input type="number" step="0.01" class="form-control" name="confidence_threshold" value="{{ editar.confidence_threshold|default:0.25 }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Device</label>
+        <select class="form-select" name="device">
+          <option value="cuda" {% if editar.device == 'cuda' %}selected{% endif %}>CUDA</option>
+          <option value="cpu" {% if editar.device == 'cpu' %}selected{% endif %}>CPU</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Clase (detectará: Persona)</label>
+        <input type="hidden" class="form-control" name="classes" value="0">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">IoU (NMS)</label>
+        <input type="number" step="0.01" class="form-control" name="iou" value="{{ editar.iou|default:0.7 }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Máx. Detecciones por Imagen</label>
+        <input type="number" class="form-control" name="max_det" value="{{ editar.max_det|default:80 }}" required>
+      </div>
+
+      <hr class="mt-4">
+      <div class="col-12">
+        <h5 class="text-primary">Configuración de Tracking</h5>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Distancia Máxima</label>
+        <input type="number" step="0.1" class="form-control" value="{{ tracking.distance_threshold|default:35 }}" name="tracking_distance_threshold" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Tiempo de Permanencia (s)</label>
+        <input type="number" step="0.1" class="form-control" value="{{ tracking.dwell_time_threshold|default:5 }}" name="dwell_time_threshold" required>
+      </div>
+    </div>
+
+    <div class="mt-4 text-end">
+      <button type="submit" class="btn btn-primary">{% if editar %}Actualizar{% else %}Registrar Modelo + Tracking{% endif %}</button>
+      {% if editar %}
+        <a href="{% url 'configurar_modelo' %}" class="btn btn-secondary">Cancelar</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <h5>Modelos Registrados</h5>
+  <table class="table table-striped table-bordered">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Modelo</th>
+        <th>Conf.</th>
+        <th>IoU</th>
+        <th>MaxDet</th>
+        <th>Device</th>
+        <th>Distancia</th>
+        <th>Permanencia</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for modelo in modelos %}
+      <tr>
+        <td>{{ modelo.id }}</td>
+        <td>{{ modelo.nombre_modelo }}</td>
+        <td>{{ modelo.modelo }}</td>
+        <td>{{ modelo.confidence_threshold }}</td>
+        <td>{{ modelo.iou }}</td>
+        <td>{{ modelo.max_det }}</td>
+        <td>{{ modelo.device }}</td>
+        <td>
+          {% if modelo.trackingconfig_set.all %}
+            {{ modelo.trackingconfig_set.first.distance_threshold }}
+          {% else %}
+            <em>-</em>
+          {% endif %}
+        </td>
+        <td>
+          {% if modelo.trackingconfig_set.all %}
+            {{ modelo.trackingconfig_set.first.dwell_time_threshold }}
+          {% else %}
+            <em>-</em>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'editar_modelo' modelo.id %}" class="btn btn-sm btn-warning">Editar</a>
+          <a href="{% url 'eliminar_modelo' modelo.id %}" class="btn btn-sm btn-danger" onclick="return confirm('¿Deseas eliminar este modelo?')">Eliminar</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="10">No hay modelos registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

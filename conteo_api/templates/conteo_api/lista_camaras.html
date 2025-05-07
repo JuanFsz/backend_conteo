@@ -1,0 +1,27 @@
+{% extends 'conteo_api/base.html' %}
+
+{% block title %}Cámaras Registradas{% endblock %}
+
+{% block content %}
+<h2>Cámaras</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>IP</th>
+            <th>Puerto</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for camara in camaras %}
+        <tr>
+            <td>{{ camara.id }}</td>
+            <td>{{ camara.direccion_ip }}</td>
+            <td>{{ camara.puerto }}</td>
+            <td>{{ camara.estado.estado }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "conteo_api/base.html" %}
+{% block content %}
+
+<h3>📊 Dashboard de Conteo</h3>
+
+<!-- Filtros -->
+<form method="get" class="row g-2 align-items-end mb-4">
+  <div class="col-md-3">
+    <label class="form-label">Desde</label>
+    <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" class="form-control">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Hasta</label>
+    <input type="date" name="fecha_fin" value="{{ fecha_fin }}" class="form-control">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Cámara</label>
+    <select name="camara" class="form-select">
+      <option value="todos">Todas</option>
+      {% for cam in camaras %}
+        <option value="{{ cam.id }}" {% if camara_id == cam.id|stringformat:"s" %}selected{% endif %}>{{ cam.direccion_ip }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-primary w-100">Filtrar</button>
+  </div>
+</form>
+
+<!-- Totales -->
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card text-white bg-primary">
+      <div class="card-body">
+        <h5>👥 Total Ingresos</h5>
+        <p class="fs-2">{{ total_ingresos }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-danger">
+      <div class="card-body">
+        <h5>🚪 Total Salidas</h5>
+        <p class="fs-2">{{ total_salidas }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-success">
+      <div class="card-body">
+        <h5>📷 Cámaras Activas</h5>
+        <p class="fs-2">{{ camaras_activas }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Tabla de resultados -->
+<h4>📋 Resultados:</h4>
+<table class="table table-bordered table-striped">
+  <thead class="table-light">
+    <tr>
+      <th>Fecha</th>
+      <th>Hora</th>
+      <th>Ingresos</th>
+      <th>Salidas</th>
+      <th>Cámara</th>
+      <th>Área</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in conteos %}
+    <tr>
+      <td>{{ c.fecha }}</td>
+      <td>{{ c.hora }}</td>
+      <td>{{ c.contador_ingreso }}</td>
+      <td>{{ c.contador_salida }}</td>
+      <td>{{ c.poligono.camara.direccion_ip }}</td>
+      <td>{{ c.poligono.nombre_poligono }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'conteo_api/base.html' %}
+
+{% block title %}Conteos de Personas{% endblock %}
+
+{% block content %}
+<h2>Conteos de Personas</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Cantidad</th>
+            <th>Área</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in conteos %}
+        <tr>
+            <td>{{ c.fecha }}</td>
+            <td>{{ c.hora }}</td>
+            <td>{{ c.cantidad }}</td>
+            <td>{{ c.poligono.nombre_poligono }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'conteo_api/base.html' %}
+{% block title %}Configurar Eventos{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h3 class="mb-4"><i class="fas fa-clock"></i> Configurar Eventos de Conteo</h3>
+
+  <form method="post" class="card shadow p-4 mb-4">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Hora Inicio</label>
+        <input type="time" class="form-control" name="desde_hora" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Hora Fin</label>
+        <input type="time" class="form-control" name="hasta_hora" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Estado</label>
+        <select name="estado_id" class="form-select" required>
+          {% for est in estados %}
+          <option value="{{ est.id }}">{{ est.estado }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Cámara</label>
+        <select name="camara_id" class="form-select" required>
+          {% for cam in camaras %}
+          <option value="{{ cam.id }}">{{ cam.direccion_ip }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Modelo</label>
+        <select name="modelo_id" class="form-select" required>
+          {% for mod in modelos %}
+          <option value="{{ mod.id }}">{{ mod.nombre_modelo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="mt-4 text-end">
+      <button type="submit" class="btn btn-primary">Registrar Evento</button>
+    </div>
+  </form>
+
+  <h5>Eventos Registrados</h5>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Inicio</th>
+        <th>Fin</th>
+        <th>Cámara</th>
+        <th>Modelo</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ev in eventos %}
+      <tr>
+        <td>{{ ev.desde_hora }}</td>
+        <td>{{ ev.hasta_hora }}</td>
+        <td>{{ ev.camara.direccion_ip }}</td>
+        <td>{{ ev.modelo.nombre_modelo }}</td>
+        <td>{{ ev.estado.estado }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5">No hay eventos registrados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
