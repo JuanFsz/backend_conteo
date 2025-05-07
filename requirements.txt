@@ -31,9 +31,9 @@ seaborn==0.13.2
 shapely==2.0.7
 six==1.16.0
 sqlparse==0.5.3
-torch==2.5.1+cu121
-torchaudio==2.5.1+cu121
-torchvision==0.20.1+cu121
+torch==2.5.1
+torchaudio==2.5.1
+torchvision==0.20.1
 tqdm==4.67.1
 ultralytics==8.3.120
 ultralytics-thop==2.0.14
