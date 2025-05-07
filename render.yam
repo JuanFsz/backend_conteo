@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn backend911.wsgi"
+    startCommand: "gunicorn backend_conteo.wsgi"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: backend_conteo.settings
